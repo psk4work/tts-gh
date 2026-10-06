@@ -4,6 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ระบบติดตามงานเจ้าหน้าที่</title>
+  
+  <!-- นำเข้า Google Identity Services SDK -->
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+
   <!-- นำเข้า CSS สำหรับ GitHub Pages -->
   <link rel="stylesheet" href="style.css">
 </head>
@@ -11,7 +15,28 @@
   <div id="app">
     <header class="topbar">
       <h1>ระบบติดตามงานเจ้าหน้าที่</h1>
-      <div id="userBadge" class="user-badge">กำลังโหลด...</div>
+      
+      <!-- ส่วนแสดงข้อมูลผู้ใช้ / ปุ่มเข้าสู่ระบบ Google -->
+      <div class="auth-box">
+        <div id="userBadge" class="user-badge" style="display: none;">กำลังโหลด...</div>
+        
+        <!-- คอนเทนเนอร์สำหรับแสดงปุ่ม Google Sign-In -->
+        <div id="googleSignInContainer">
+          <div id="g_id_onload"
+               data-client_id="YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com"
+               data-callback="handleCredentialResponse"
+               data-auto_prompt="false">
+          </div>
+          <div class="g_id_signin"
+               data-type="standard"
+               data-size="medium"
+               data-theme="outline"
+               data-text="sign_in_with"
+               data-shape="rectangular"
+               data-logo_alignment="left">
+          </div>
+        </div>
+      </div>
     </header>
 
     <nav class="tabs">
