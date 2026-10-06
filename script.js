@@ -1,6 +1,6 @@
 <script>
   // 🔴 1. วาง Web App URL ที่ได้จากขั้นตอน Deploy ของ Google Apps Script ที่นี่
-  const API_URL = "https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec";
+  const API_URL = "https://script.google.com/macros/s/AKfycby1Mt4S3oJzmQrN1hwuEk0kwcttdkQEwf63x3kyPGS9j7XknjXls8hG72QuQ9gmoKjDdA/exec";
 
   let CURRENT_USER = null;
   let ALL_OFFICERS = [];
