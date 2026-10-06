@@ -3,126 +3,149 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ระบบแปลงข้อความเป็นเสียง (TTS)</title>
-  <style>
-    * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-    body { background-color: #f4f6f9; display: flex; justify-content: center; padding: 20px; margin: 0; }
-    .card { background: #ffffff; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); width: 100%; max-width: 500px; }
-    h2 { color: #1a73e8; margin-top: 0; font-size: 1.4rem; text-align: center; }
-    textarea { width: 100%; height: 120px; padding: 12px; border: 1px solid #dadce0; border-radius: 8px; font-size: 1rem; resize: vertical; outline: none; }
-    textarea:focus { border-color: #1a73e8; }
-    .control-group { margin: 15px 0; }
-    label { font-weight: 600; font-size: 0.9rem; color: #5f6368; display: block; margin-bottom: 5px; }
-    select, button { width: 100%; padding: 12px; font-size: 1rem; border-radius: 8px; border: 1px solid #dadce0; }
-    button { background-color: #1a73e8; color: white; border: none; font-weight: 600; cursor: pointer; margin-top: 10px; transition: background 0.2s; }
-    button:hover { background-color: #1557b0; }
-    button:disabled { background-color: #ccc; cursor: not-allowed; }
-    .status-box { margin-top: 15px; padding: 10px; border-radius: 6px; font-size: 0.85rem; text-align: center; display: none; }
-    .status-success { background: #e6f4ea; color: #137333; }
-    .status-error { background: #fce8e6; color: #c5221f; }
-  </style>
+  <title>ระบบติดตามงานเจ้าหน้าที่</title>
+  <!-- นำเข้า CSS สำหรับ GitHub Pages -->
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
+  <div id="app">
+    <header class="topbar">
+      <h1>ระบบติดตามงานเจ้าหน้าที่</h1>
+      <div id="userBadge" class="user-badge">กำลังโหลด...</div>
+    </header>
 
-  <div class="card">
-    <h2>ระบบแปลงข้อความเป็นเสียง (TTS)</h2>
-    
-    <label for="textInput">กรอกข้อความที่ต้องการอ่าน:</label>
-    <textarea id="textInput" placeholder="พิมพ์ข้อความภาษาไทย หรือ ภาษาอังกฤษ..."></textarea>
+    <nav class="tabs">
+      <button class="tab-btn active" data-tab="overview">ภาพรวม</button>
+      <button class="tab-btn" data-tab="mytasks">งานของฉัน</button>
+      <button class="tab-btn" id="allTasksTabBtn" data-tab="alltasks" style="display:none;">งานทั้งหมด</button>
+      <button class="tab-btn" data-tab="addtask">เพิ่มงานใหม่</button>
+      <button class="tab-btn" data-tab="edittask">ปรับปรุงข้อมูล</button>
+    </nav>
 
-    <div class="control-group">
-      <label for="voiceSelect">เลือกภาษา / เสียงพูด:</label>
-      <select id="voiceSelect"></select>
-    </div>
+    <main>
+      <!-- ภาพรวม -->
+      <section id="tab-overview" class="tab-panel active">
+        <div class="cards" id="summaryCards"></div>
+        <h2>สรุปตามเจ้าหน้าที่</h2>
+        <div class="table-wrap">
+          <table class="data-table" id="officerTable">
+            <thead>
+              <tr>
+                <th>ชื่อ</th><th>ทั้งหมด</th><th>ในมือ</th>
+                <th>เกินกำหนด</th><th>ใกล้ครบกำหนด</th><th>เสร็จสิ้น</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
 
-    <button id="speakBtn" onclick="processAndSpeak()">อ่านข้อความ (Speak)</button>
-    
-    <div id="status" class="status-box"></div>
+      <!-- งานของฉัน -->
+      <section id="tab-mytasks" class="tab-panel">
+        <h2>สรุปงานของฉัน</h2>
+        <div class="cards" id="myStatCards"></div>
+        <h2>รายการงาน</h2>
+        <div id="myTasksList" class="task-list"></div>
+      </section>
+
+      <!-- งานทั้งหมด (หัวหน้าเท่านั้น) -->
+      <section id="tab-alltasks" class="tab-panel">
+        <h2>งานทั้งหมด (ทุกเจ้าหน้าที่)</h2>
+        <div class="filter-row">
+          <label>กรองตามเจ้าหน้าที่
+            <select id="filterAssignee"><option value="">ทั้งหมด</option></select>
+          </label>
+          <label>กรองตามสถานะ
+            <select id="filterStatus">
+              <option value="">ทั้งหมด</option>
+              <option value="เกินกำหนด">เกินกำหนด</option>
+              <option value="ใกล้ครบกำหนด">ใกล้ครบกำหนด</option>
+              <option value="ปกติ">ปกติ</option>
+              <option value="เสร็จสิ้น">เสร็จสิ้น</option>
+            </select>
+          </label>
+          <label class="checkbox-label">
+            <input type="checkbox" id="hideCompleted">
+            ไม่แสดงงานที่เสร็จสิ้นแล้ว
+          </label>
+          <label class="checkbox-label">
+            <input type="checkbox" id="filterCloseRequested">
+            แสดงเฉพาะงานที่ขอปิดงาน
+          </label>
+        </div>
+        <div id="allTasksList" class="task-list"></div>
+      </section>
+
+      <!-- เพิ่มงานใหม่ -->
+      <section id="tab-addtask" class="tab-panel">
+        <h2>เพิ่มงานใหม่</h2>
+        <form id="addTaskForm">
+          <label>วันที่รับเรื่อง
+            <input type="date" id="f_receivedDate" required>
+          </label>
+          <label>ชื่อเรื่อง
+            <input type="text" id="f_title" placeholder="เช่น ตรวจสอบเรื่องร้องเรียน..." required>
+          </label>
+          <label>ผู้รับผิดชอบ
+            <select id="f_assignee" required></select>
+          </label>
+          <label>กำหนดวันแล้วเสร็จ
+            <input type="date" id="f_dueDate" required>
+          </label>
+          <label>หมายเลขแฟ้ม
+            <input type="text" id="f_fileNumber" placeholder="เช่น กท 0501/123">
+          </label>
+          <label>หมายเหตุ
+            <textarea id="f_note" rows="3"></textarea>
+          </label>
+          <button type="submit">บันทึกงาน</button>
+        </form>
+        <div id="addTaskMsg"></div>
+      </section>
+
+      <!-- ปรับปรุงข้อมูล -->
+      <section id="tab-edittask" class="tab-panel">
+        <h2>ปรับปรุงข้อมูลงานของฉัน</h2>
+        <label class="checkbox-label" style="margin-bottom:10px;">
+          <input type="checkbox" id="editHideCompleted">
+          ไม่แสดงงานที่เสร็จสิ้นแล้ว
+        </label>
+        <div id="editTaskList" class="task-list"></div>
+
+        <form id="editTaskForm" class="task-form" style="display:none; margin-top:16px;">
+          <input type="hidden" id="e_id">
+          <label>ชื่อเรื่อง
+            <input type="text" id="e_title" required>
+          </label>
+          <label>กำหนดวันแล้วเสร็จ
+            <input type="date" id="e_dueDate" required>
+          </label>
+          <label>ความคืบหน้า
+            <select id="e_progress">
+              <option value="ไม่ได้ดำเนินการ">ไม่ได้ดำเนินการ</option>
+              <option value="ระหว่างดำเนินการ">ระหว่างดำเนินการ</option>
+              <option value="เสนอหัวหน้าพิจารณา">เสนอหัวหน้าพิจารณา</option>
+              <option value="เสนออธิบดีแล้ว">เสนออธิบดีแล้ว</option>
+              <option value="อธิบดีลงนามแล้ว">อธิบดีลงนามแล้ว</option>
+            </select>
+          </label>
+          <label>หมายเลขแฟ้ม
+            <input type="text" id="e_fileNumber" placeholder="เช่น กท 0501/123">
+          </label>
+          <label>หมายเหตุ
+            <textarea id="e_note" rows="3"></textarea>
+          </label>
+          <div style="display:flex; gap:8px;">
+            <button type="submit">บันทึกการแก้ไข</button>
+            <button type="button" id="cancelEditBtn" style="background:#888;">ยกเลิก</button>
+          </div>
+        </form>
+        <div id="editTaskMsg"></div>
+      </section>
+    </main>
   </div>
 
-  <script>
-    // *** นำ URL Web App ของ Apps Script มาวางตรงนี้ ***
-    const GAS_API_URL = "https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec";
-
-    let synth = window.speechSynthesis;
-    let voices = [];
-
-    // ดึงรายชื่อเสียงพูดที่มีในระบบ
-    function loadVoices() {
-      voices = synth.getVoices();
-      const select = document.getElementById('voiceSelect');
-      select.innerHTML = '';
-      
-      voices.forEach((voice, index) => {
-        if (voice.lang.includes('th') || voice.lang.includes('en')) {
-          const option = document.createElement('option');
-          option.value = index;
-          option.textContent = `${voice.name} (${voice.lang})`;
-          if (voice.lang.includes('th')) option.selected = true;
-          select.appendChild(option);
-        }
-      });
-    }
-
-    if (speechSynthesis.onvoiceschanged !== undefined) {
-      speechSynthesis.onvoiceschanged = loadVoices;
-    }
-    loadVoices();
-
-    async function processAndSpeak() {
-      const text = document.getElementById('textInput').value.trim();
-      const speakBtn = document.getElementById('speakBtn');
-
-      if (!text) {
-        alert("กรุณากรอกข้อความก่อนกดอ่าน");
-        return;
-      }
-
-      speakBtn.disabled = true;
-      speakBtn.innerText = "กำลังประมวลผล...";
-      showStatus("กำลังเล่นเสียง...", "success");
-
-      // 1. เล่นเสียงพูดฝั่ง Frontend
-      const selectedIndex = document.getElementById('voiceSelect').value;
-      const utterance = new SpeechSynthesisUtterance(text);
-      if (voices[selectedIndex]) {
-        utterance.voice = voices[selectedIndex];
-      }
-      synth.speak(utterance);
-
-      // 2. ส่งข้อมูลไปประมวลผล/บันทึกที่ Apps Script API (Backend)
-      try {
-        const response = await fetch(GAS_API_URL, {
-          method: "POST",
-          headers: { "Content-Type": "text/plain;charset=utf-8" },
-          body: JSON.stringify({
-            action: "log_tts",
-            text: text,
-            lang: utterance.voice ? utterance.voice.lang : "th-TH"
-          })
-        });
-
-        const result = await response.json();
-        if (result.status === "success") {
-          showStatus("อ่านเสียงและบันทึกข้อมูลเรียบร้อย", "success");
-        } else {
-          showStatus("ส่งข้อมูลไป API ล้มเหลว: " + result.message, "error");
-        }
-      } catch (err) {
-        console.error(err);
-        showStatus("อ่านเสียงสำเร็จ (ไม่ได้เชื่อมต่อ API)", "error");
-      } finally {
-        speakBtn.disabled = false;
-        speakBtn.innerText = "อ่านข้อความ (Speak)";
-      }
-    }
-
-    function showStatus(msg, type) {
-      const statusDiv = document.getElementById('status');
-      statusDiv.style.display = 'block';
-      statusDiv.className = `status-box status-${type}`;
-      statusDiv.innerText = msg;
-    }
-  </script>
+  <!-- นำเข้า JavaScript สำหรับ GitHub Pages -->
+  <script src="script.js"></script>
 </body>
 </html>
