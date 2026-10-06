@@ -8,7 +8,7 @@
 // ------------------------------------------------------------
 
 // 🔴 ใส่ Client ID จาก Google Cloud Console
-const GOOGLE_CLIENT_ID = "YOUR_CLIENT_ID.apps.googleusercontent.com";
+const GOOGLE_CLIENT_ID = "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 .apps.googleusercontent.com";
 
 // 🔴 Web App URL ของ Google Apps Script
 const API_URL = "https://script.google.com/macros/s/AKfycby1Mt4S3oJzmQrN1hwuEk0kwcttdkQEwf63x3kyPGS9j7XknjXls8hG72QuQ9gmoKjDdA/exec";
