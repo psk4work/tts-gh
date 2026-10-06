@@ -1,1 +1,128 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ระบบแปลงข้อความเป็นเสียง (TTS)</title>
+  <style>
+    * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    body { background-color: #f4f6f9; display: flex; justify-content: center; padding: 20px; margin: 0; }
+    .card { background: #ffffff; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); width: 100%; max-width: 500px; }
+    h2 { color: #1a73e8; margin-top: 0; font-size: 1.4rem; text-align: center; }
+    textarea { width: 100%; height: 120px; padding: 12px; border: 1px solid #dadce0; border-radius: 8px; font-size: 1rem; resize: vertical; outline: none; }
+    textarea:focus { border-color: #1a73e8; }
+    .control-group { margin: 15px 0; }
+    label { font-weight: 600; font-size: 0.9rem; color: #5f6368; display: block; margin-bottom: 5px; }
+    select, button { width: 100%; padding: 12px; font-size: 1rem; border-radius: 8px; border: 1px solid #dadce0; }
+    button { background-color: #1a73e8; color: white; border: none; font-weight: 600; cursor: pointer; margin-top: 10px; transition: background 0.2s; }
+    button:hover { background-color: #1557b0; }
+    button:disabled { background-color: #ccc; cursor: not-allowed; }
+    .status-box { margin-top: 15px; padding: 10px; border-radius: 6px; font-size: 0.85rem; text-align: center; display: none; }
+    .status-success { background: #e6f4ea; color: #137333; }
+    .status-error { background: #fce8e6; color: #c5221f; }
+  </style>
+</head>
+<body>
 
+  <div class="card">
+    <h2>ระบบแปลงข้อความเป็นเสียง (TTS)</h2>
+    
+    <label for="textInput">กรอกข้อความที่ต้องการอ่าน:</label>
+    <textarea id="textInput" placeholder="พิมพ์ข้อความภาษาไทย หรือ ภาษาอังกฤษ..."></textarea>
+
+    <div class="control-group">
+      <label for="voiceSelect">เลือกภาษา / เสียงพูด:</label>
+      <select id="voiceSelect"></select>
+    </div>
+
+    <button id="speakBtn" onclick="processAndSpeak()">อ่านข้อความ (Speak)</button>
+    
+    <div id="status" class="status-box"></div>
+  </div>
+
+  <script>
+    // *** นำ URL Web App ของ Apps Script มาวางตรงนี้ ***
+    const GAS_API_URL = "https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec";
+
+    let synth = window.speechSynthesis;
+    let voices = [];
+
+    // ดึงรายชื่อเสียงพูดที่มีในระบบ
+    function loadVoices() {
+      voices = synth.getVoices();
+      const select = document.getElementById('voiceSelect');
+      select.innerHTML = '';
+      
+      voices.forEach((voice, index) => {
+        if (voice.lang.includes('th') || voice.lang.includes('en')) {
+          const option = document.createElement('option');
+          option.value = index;
+          option.textContent = `${voice.name} (${voice.lang})`;
+          if (voice.lang.includes('th')) option.selected = true;
+          select.appendChild(option);
+        }
+      });
+    }
+
+    if (speechSynthesis.onvoiceschanged !== undefined) {
+      speechSynthesis.onvoiceschanged = loadVoices;
+    }
+    loadVoices();
+
+    async function processAndSpeak() {
+      const text = document.getElementById('textInput').value.trim();
+      const speakBtn = document.getElementById('speakBtn');
+
+      if (!text) {
+        alert("กรุณากรอกข้อความก่อนกดอ่าน");
+        return;
+      }
+
+      speakBtn.disabled = true;
+      speakBtn.innerText = "กำลังประมวลผล...";
+      showStatus("กำลังเล่นเสียง...", "success");
+
+      // 1. เล่นเสียงพูดฝั่ง Frontend
+      const selectedIndex = document.getElementById('voiceSelect').value;
+      const utterance = new SpeechSynthesisUtterance(text);
+      if (voices[selectedIndex]) {
+        utterance.voice = voices[selectedIndex];
+      }
+      synth.speak(utterance);
+
+      // 2. ส่งข้อมูลไปประมวลผล/บันทึกที่ Apps Script API (Backend)
+      try {
+        const response = await fetch(GAS_API_URL, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify({
+            action: "log_tts",
+            text: text,
+            lang: utterance.voice ? utterance.voice.lang : "th-TH"
+          })
+        });
+
+        const result = await response.json();
+        if (result.status === "success") {
+          showStatus("อ่านเสียงและบันทึกข้อมูลเรียบร้อย", "success");
+        } else {
+          showStatus("ส่งข้อมูลไป API ล้มเหลว: " + result.message, "error");
+        }
+      } catch (err) {
+        console.error(err);
+        showStatus("อ่านเสียงสำเร็จ (ไม่ได้เชื่อมต่อ API)", "error");
+      } finally {
+        speakBtn.disabled = false;
+        speakBtn.innerText = "อ่านข้อความ (Speak)";
+      }
+    }
+
+    function showStatus(msg, type) {
+      const statusDiv = document.getElementById('status');
+      statusDiv.style.display = 'block';
+      statusDiv.className = `status-box status-${type}`;
+      statusDiv.innerText = msg;
+    }
+  </script>
+</body>
+</html>
